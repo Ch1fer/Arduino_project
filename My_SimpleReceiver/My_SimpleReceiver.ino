@@ -195,6 +195,7 @@ void loop() {
 
         case 7:
           Serial.println("Mode_7");
+          setColour(200, 100, 255); 
           break;
 
         case 8:

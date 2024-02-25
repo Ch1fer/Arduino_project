@@ -53,8 +53,8 @@ int8_t zoneRND[ZONE_AMOUNT - 1];
 
 int mode = 0;
 int new_mode = 0;
+bool old_power = true;
 bool power = true;
-
 int old_brightness = 255;
 int brightness = 255;
 
@@ -72,7 +72,7 @@ void setup() {
   Serial.begin(115200);
 
   startMillis = millis();
-
+  setColour(255, 0, 0); //red
   // Just to know which program is running on my Arduino
   Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_IRREMOTE));
 
@@ -87,7 +87,6 @@ void setup() {
 void loop() {
   currentMillis = millis();
   strip.setBrightness(brightness);
-  stripFire.setBrightness(brightness);
   // Serial.println(brightness);
   /*
     * Check if received data is available and if yes, try to decode it.
@@ -125,11 +124,9 @@ void loop() {
       power = !power;
       if(!power){
         Serial.println("OFF");
+        clearStrip();
       }
-      else{
-        Serial.print("Mode_");
-        Serial.println(mode);
-      }
+
       startMillis = millis();
     }
     else if(power){
@@ -138,7 +135,7 @@ void loop() {
         
         case 0x7:
 
-          if(brightness >= 95 && (currentMillis - startMillis >= period)){
+          if(brightness >= 63 && (currentMillis - startMillis >= period)){
             brightness = brightness - 32;
             startMillis = millis();
           }
@@ -199,60 +196,65 @@ void loop() {
     // Serial.print(" = ");
     // Serial.println(currentMillis - startMillis);
   }
-  if(power && (new_mode != mode || mode == 9 || old_brightness != brightness)){
-      mode = new_mode;
-      old_brightness = brightness;
-      switch (mode){
+  if(power && (new_mode != mode || mode == 9 || !old_power || old_brightness != brightness))
+  {
+    mode = new_mode;
+
+    switch (mode){
+
+      case 0:
+        Serial.println("Mode_0");
+        setColour(255, 0, 0); //red
+        Serial.println(brightness);
+        break;
+
+      case 1:
+        Serial.println("Mode_1");
+        setColour(0, 255, 0); //green
+        break;
+
+      case 2:
+        Serial.println("Mode_2");
+        setColour(0, 0, 255); //blue
+        break;
+
+      case 3:
+        Serial.println("Mode_3");
+        setColour(255, 255, 0); //yellow
+        break;
       
-        case 0:
-          Serial.println("Mode_0");
-          setColour(255, 0, 0); //red
-          break;
+      case 4:
+        Serial.println("Mode_4");
+        setColour(255, 120, 0); //orange
+        break;
 
-        case 1:
-          Serial.println("Mode_1");
-          setColour(0, 255, 0); //green
-          break;
+      case 5:
+        Serial.println("Mode_5");
+        setColour(200, 0, 255); //purple
+        break;
 
-        case 2:
-          Serial.println("Mode_2");
-          setColour(0, 0, 255); //blue
-          break;
+      case 6:
+        Serial.println("Mode_6");
+        break;
 
-        case 3:
-          Serial.println("Mode_3");
-          setColour(255, 255, 0); //yellow
-          break;
-        
-        case 4:
-          Serial.println("Mode_4");
-          setColour(255, 120, 0); //orange
-          break;
+      case 7:
+        Serial.println("Mode_7");
+        break;
 
-        case 5:
-          Serial.println("Mode_5");
-          setColour(200, 0, 255); //purple
-          break;
+      case 8:
+        Serial.println("Mode_8");
+        break;
 
-        case 6:
-          Serial.println("Mode_6");
-          break;
-
-        case 7:
-          Serial.println("Mode_7");
-          break;
-
-        case 8:
-          Serial.println("Mode_8");
-          break;
-
-        case 9:
-          Serial.println("Mode_9");
-          fireTick();
-          randomizeZones();
-          break;
+      case 9:
+        Serial.println("Mode_9");
+        stripFire.setBrightness(brightness);
+        fireTick();
+        randomizeZones();
+        break;
       }
-    }
+  }
+  old_power = power;
+  old_brightness = brightness;
 }
 
 void clearStrip(){
@@ -277,7 +279,7 @@ void setColour(int r, int g, int b){
   }
   strip.setBrightness(brightness);
   strip.show();
-  strip.setBrightness(brightness);
+  
   return;
 }
 
@@ -296,7 +298,7 @@ void randomizeZones() {
   }
 
   // движение зон
-  if (millis() - prevTime2 >= 50) {
+  if (millis() - prevTime2 >= 200) {
     prevTime2 = millis();
     FOR_i(0, ZONE_AMOUNT - 1) {
       zoneShift[i] += (zoneRND[i] - zoneShift[i]) * ZONE_K;
@@ -308,7 +310,7 @@ void fireTick() {
   static uint32_t prevTime, prevTime2;
 
   // задаём направление движения огня
-  if (millis() - prevTime > 100) {
+  if (millis() - prevTime > 200) {
     prevTime = millis();
     FOR_i(0, ZONE_AMOUNT) {
       zoneRndValues[i] = random(0, 10);
@@ -316,7 +318,7 @@ void fireTick() {
   }
   
   // двигаем пламя
-  if (millis() - prevTime2 > 20) {
+  if (millis() - prevTime2 > 200) {
     prevTime2 = millis();
     int thisPos = 0, lastPos = 0;
     FOR_i(0, ZONE_AMOUNT) {
@@ -360,7 +362,6 @@ LEDdata getFireColor(int val) {
            constrain(map(val, 20, 60, MIN_BRIGHT, MAX_BRIGHT), 0, 255)  // V
          );
 }
-
 
 
 
